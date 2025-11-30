@@ -20,7 +20,21 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// Serve static files from public directory (if exists)
+if (fs.existsSync(path.join(__dirname, 'public'))) {
+  app.use(express.static('public'));
+}
+
+// Serve frontend build files from Vite dist directory
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  console.log(`📦 Serving frontend from: ${distPath}`);
+} else {
+  console.log(`⚠️  Frontend dist directory not found at: ${distPath}`);
+  console.log(`   Make sure to run 'npm run build' before starting the server`);
+}
 
 // Configuration
 const PORT = process.env.PORT || 3001;
@@ -386,6 +400,31 @@ app.get('/api/network-metrics', (req, res) => {
     totalPacketsReceived: networkMetrics.totalPacketsReceived,
     participantsCount: participants.size
   });
+});
+
+// Serve React app for all non-API routes (SPA fallback)
+// This must be AFTER all API routes
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Serve index.html for all other routes (React Router)
+  const indexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send(`
+      <html>
+        <body>
+          <h1>Frontend not built</h1>
+          <p>Please run <code>npm run build</code> to build the frontend.</p>
+          <p>Expected path: ${indexPath}</p>
+        </body>
+      </html>
+    `);
+  }
 });
 
 // Get the host to bind to

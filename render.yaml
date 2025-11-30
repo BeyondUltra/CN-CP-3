@@ -3,7 +3,7 @@ services:
     name: audio-conference-server
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: chmod +x render-build.sh && sh render-build.sh
     startCommand: npm start
     envVars:
       - key: NODE_ENV
