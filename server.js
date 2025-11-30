@@ -29,10 +29,16 @@ if (fs.existsSync(path.join(__dirname, 'public'))) {
 // Serve frontend build files from Vite dist directory
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+  // Serve static files from dist directory
+  app.use(express.static(distPath, {
+    maxAge: '1d', // Cache static assets
+    etag: true
+  }));
   console.log(`📦 Serving frontend from: ${distPath}`);
 } else {
   console.log(`⚠️  Frontend dist directory not found at: ${distPath}`);
+  console.log(`   Current working directory: ${process.cwd()}`);
+  console.log(`   __dirname: ${__dirname}`);
   console.log(`   Make sure to run 'npm run build' before starting the server`);
 }
 
@@ -404,23 +410,45 @@ app.get('/api/network-metrics', (req, res) => {
 
 // Serve React app for all non-API routes (SPA fallback)
 // This must be AFTER all API routes
-app.get('*', (req, res) => {
-  // Don't serve index.html for API routes
+app.get('*', (req, res, next) => {
+  // Skip API routes
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
   
+  // Skip socket.io requests
+  if (req.path.startsWith('/socket.io/')) {
+    return next();
+  }
+  
   // Serve index.html for all other routes (React Router)
   const indexPath = path.join(distPath, 'index.html');
+  
   if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
+    res.sendFile(path.resolve(indexPath));
   } else {
-    res.status(404).send(`
+    // If dist doesn't exist, show helpful error
+    res.status(500).send(`
+      <!DOCTYPE html>
       <html>
+        <head>
+          <title>Frontend Not Built</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+            h1 { color: #e74c3c; }
+            code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+            .info { background: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          </style>
+        </head>
         <body>
-          <h1>Frontend not built</h1>
-          <p>Please run <code>npm run build</code> to build the frontend.</p>
-          <p>Expected path: ${indexPath}</p>
+          <h1>⚠️ Frontend Not Built</h1>
+          <div class="info">
+            <p><strong>Expected path:</strong> <code>${indexPath}</code></p>
+            <p><strong>Current directory:</strong> <code>${process.cwd()}</code></p>
+            <p><strong>__dirname:</strong> <code>${__dirname}</code></p>
+          </div>
+          <p>Please ensure the build script runs during deployment.</p>
+          <p>Check Render build logs to verify <code>npm run build</code> executed successfully.</p>
         </body>
       </html>
     `);
