@@ -1,0 +1,33 @@
+{
+  "name": "audio-conference-backend",
+  "version": "1.0.0",
+  "description": "Backend server for real-time audio conference application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "os": "^0.1.2",
+    "path": "^0.12.7",
+    "socket.io": "^4.8.1",
+    "uuid": "^9.0.1",
+    "wavefile": "^11.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "audio",
+    "conference",
+    "webrtc",
+    "socket.io",
+    "real-time"
+  ],
+  "author": "Audio Conference Team",
+  "license": "MIT"
+}
